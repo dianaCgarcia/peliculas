@@ -20,7 +20,6 @@ var controller = {
         });
     },
 
-
     //Get an user by id
     getUserId: function(req,res){
         var sql = "select * from user where id = ?"

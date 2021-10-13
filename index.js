@@ -21,7 +21,7 @@ app.use('/api', user_route);
 /* ---------------------------------------------------------------- */
 
 //Server port
-var HTTP_PORT = 8080
+var HTTP_PORT = 8081
 //Start server
 app.listen(HTTP_PORT, () => {
   console.log("Server running on port %PORT%".replace("%PORT%", HTTP_PORT))

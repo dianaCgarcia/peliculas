@@ -1,6 +1,7 @@
 'use strict'
 
-var db = require("../database.js");
+var db = require('../database.js');
+var jwt = require('../services/jwt');
 
 var controller = {
     //Get all users
@@ -13,7 +14,7 @@ var controller = {
                 res.status(400).json({ "error": err.message });
                 return;
             }
-            res.json({
+            return res.status(200).send({
                 "message": "success",
                 "data": rows
             })
@@ -30,10 +31,11 @@ var controller = {
                 res.status(400).json({ "error": err.message });
                 return;
             }
-            res.json({
+            return res.status(200).send({
                 "message": "success",
                 "data": row
             })
+
         });
     },
 
@@ -70,7 +72,7 @@ var controller = {
                 res.status(400).json({ "error": err.message })
                 return;
             }
-            res.json({
+            return res.status(200).send({
                 "message": "success",
                 "data": data,
                 "id": this.lastID
@@ -83,15 +85,36 @@ var controller = {
         var params = req.body;
 
         var errors = []
-        if (!req.body.password) {
+        if (!params.password) {
             errors.push("Falta password");
         }
-        if (!req.body.email) {
+        if (!params.email) {
             errors.push("Falta email");
         } 
         if (errors.length) {
             res.status(400).json({ "error": errors.join(", ") });
             return;
+        }else{
+            var sql = "select * from user where email = ?"
+            var paramEmail = [params.email]
+
+            db.get(sql, paramEmail, (err, row) => {
+                if (err) {
+                    res.status(400).json({ "error": err.message });
+                    return;
+                }else{
+                    if(params.password == row.password){
+                        if(params.gettoken){
+                            return res.status(200).send({
+                                token: jwt.createToken(row)
+                            })
+                        }
+                    }else{
+                        res.status(400).json({ "error": "Datos invalidos" });
+                        return;
+                    }  
+                }
+            });
         }
     }
 };

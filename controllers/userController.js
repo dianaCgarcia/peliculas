@@ -1,118 +1,114 @@
 'use strict'
 
-var db = require('../database.js');
-var jwt = require('../services/jwt');
+//Requires
+const db = require("../database.js");
+const jwt = require("../services/jwt");
+const messages = require("../services/messages");
+const bcrypt = require("bcrypt");
+const validator = require("email-validator");
 
-var controller = {
-    //Get all users
-    getUsers: function(req,res){
-        var sql = "select * from user"
-        var params = []
-
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                res.status(400).json({ "error": err.message });
-                return;
-            }
-            return res.status(200).send({
-                "message": "success",
-                "data": rows
-            })
-        });
-    },
-
-    //Get an user by id
-    getUserId: function(req,res){
-        var sql = "select * from user where id = ?"
-        var params = [req.params.id]
-
-        db.get(sql, params, (err, row) => {
-            if (err) {
-                res.status(400).json({ "error": err.message });
-                return;
-            }
-            return res.status(200).send({
-                "message": "success",
-                "data": row
-            })
-
-        });
-    },
-
-    //Add new user
+const controller = {
+    //Add new user in database
     createUser: function(req,res){
-        var errors = []
-        if (!req.body.email) {
+        const valueBody = req.body;
+        const salt = 10;
+        let errors = [];
+
+        //Validate field email isn't empty and its format is valid
+        if (!valueBody.email) {
             errors.push("Falta email");
+        }else{
+            if(!validator.validate(valueBody.email)){
+                errors.push("Formato de email invalido");
+            }
         }
-        if (!req.body.firstName) {
+        //Validate fields aren't empty
+        if (!valueBody.firstName) {
             errors.push("Falta nombre");
         } 
-        if (!req.body.lastName) {
+        if (!valueBody.lastName) {
             errors.push("Falta apellido");
         }
-        if (!req.body.password) {
+        if (!valueBody.password) {
             errors.push("Falta password");
         }
+        //If fields are empty, send error
         if (errors.length) {
-            res.status(400).json({ "error": errors.join(", ") });
-            return;
+            messages.answer(res.status(400),errors.join(", "),null);
         }
-        var data = {
-            email: req.body.email,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            password: req.body.password
+
+        //Asign value of req.body to variable data
+        let data = {
+            email: valueBody.email,
+            firstName: valueBody.firstName,
+            lastName: valueBody.lastName,
+            password: valueBody.password
         }
-        var sql = 'INSERT INTO user (email, firstName, lastName, password) VALUES (?,?,?,?)'
-        var params = [data.email, data.firstName, data.lastName, data.password]
-        
-        db.run(sql, params, function (err, result) {
-            if (err) {
-                res.status(400).json({ "error": err.message })
-                return;
-            }
-            return res.status(200).send({
-                "message": "success",
-                "data": data,
-                "id": this.lastID
-            })
-        });
+
+        //Encript password
+        bcrypt.hash(valueBody.password, salt, (err, hash) => {
+            data.password = hash;
+
+            //Query to insert in table user and params to execute insert query
+            const sql = "INSERT INTO user (email, firstName, lastName, password) VALUES (?,?,?,?)"
+            const params = [data.email, data.firstName, data.lastName, data.password]
+            
+            //Execute query 
+            db.run(sql, params, function (err, result) {
+                if (err) {
+                    messages.answer(res.status(400),err.message,null);
+                    return;
+                }
+                messages.answer(res.status(200),"Usuario creado exitosamente",data);
+            });
+        })    
     },
 
-    //Login
+    //User's login
     login: function(req,res) {
-        var params = req.body;
+        const valueBody = req.body;
+        let errors = []
 
-        var errors = []
-        if (!params.password) {
+        //Validate fields aren't empty
+        if (!valueBody.password) {
             errors.push("Falta password");
         }
-        if (!params.email) {
+        if (!valueBody.email) {
             errors.push("Falta email");
-        } 
-        if (errors.length) {
-            res.status(400).json({ "error": errors.join(", ") });
-            return;
         }else{
-            var sql = "select * from user where email = ?"
-            var paramEmail = [params.email]
+            if(!validator.validate(valueBody.email)){
+                errors.push("Formato de email invalido");
+            }
+        }
+        //If fields are empty, send error
+        if (errors.length) {
+            messages.answer(res.status(400),errors.join(", "),null);
+        }else{
+            //Query to verify if email exist in the table user and params to execute the query
+            const sql = "SELECT * FROM user where email = ?"
 
-            db.get(sql, paramEmail, (err, row) => {
+            //Execute query
+            db.get(sql, valueBody.email, (err, row) => {
                 if (err) {
-                    res.status(400).json({ "error": err.message });
+                    messages.answer(res.status(400),err.message,null);
                     return;
                 }else{
-                    if(params.password == row.password){
-                        if(params.gettoken){
-                            return res.status(200).send({
-                                token: jwt.createToken(row)
-                            })
-                        }
+                    //If query found a value
+                    if(row){
+                        //Verify if password in db equal to password in the body
+                        bcrypt.compare(valueBody.password, row.password, (err, check) => {
+                            if(check){
+                                return res.status(200).send({
+                                    "message": "Usuario logueado exitosamente",
+                                    "token": jwt.createToken(row)
+                                })
+                            }else{
+                                messages.answer(res.status(400),"Datos invalidos",null);
+                            }  
+                        })
                     }else{
-                        res.status(400).json({ "error": "Datos invalidos" });
-                        return;
-                    }  
+                        messages.answer(res.status(400),"Email no encontrado",null);
+                    }
                 }
             });
         }

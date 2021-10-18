@@ -1,153 +1,124 @@
 'use strict'
 
-var Request = require("request");
-var db = require('../database.js');
+//Requires
+const Request = require("request");
+const db = require("../database.js");
+const axios = require("axios");
+const randomNumber = require("../services/randomNumbers");
+const messages = require("../services/messages");
 
-var controller = {
+const controller = {
+    //Get movies from "themoviedb"
     getMovies: function(req,res){
+        const valueBody = req.body;
+        const apiKey = valueBody.api_key;
+        const keyword = valueBody.keyword;
+        const sort_by = valueBody.sort_by
+        
+        //If body has a keyword will search movies related with this
+        if(keyword){
+            const baseURL = "https://api.themoviedb.org/3/search/keyword?";
+            const url = baseURL + "api_key=" + apiKey + "&" + "query=" + keyword;
 
-        if(req.body.keyword){
-            var data = {
-                api_key: req.body.api_key,
-                keyword: req.body.keyword
-            }
-
-            var baseURL = "https://api.themoviedb.org/3/search/keyword?";
-            var url = baseURL + 'api_key=' + data.api_key + '&' + 'query=' + data.keyword;
-
-            Request.get(url, (error, response, body) => {
-                if(error) {
-                    return console.dir(error);
+            Request.get(url, (err, response, body) => {
+                if(err) {
+                    messages.answer(res.status(400),err.message,null);
+                    return;
                 }else{
-                    return res.status(200).send({
-                        "message": "success",
-                        "data": (body)
-                    })
+                    messages.answer(res.status(200),"success",JSON.parse(body));
                 }
             });
         }else{
-            var data = {
-                api_key: req.body.api_key,
-                sort_by: req.body.sort_by
-            }
-            var baseURL = "https://api.themoviedb.org/3/discover/movie?";
-            var url = baseURL + 'api_key=' + data.api_key + '&' + 'sort_by=' + data.sort_by;
+            //If hasn't keyword, search all movies
+            const baseURL = "https://api.themoviedb.org/3/discover/movie?";
+            const url = baseURL + "api_key=" + apiKey + "&" + "sort_by=" + sort_by;
 
-            Request.get(url, (error, response, body) => {
-                if(error) {
-                    return console.dir(error);
+            Request.get(url, (err, response, body) => {
+                if(err) {
+                    messages.answer(res.status(400),err.message,null);
+                    return;
                 }else{
+                    //If search movies is success, randomNumbers is called to generate randoms numbers and added to data
+                    const movies = JSON.parse(body);
+                    /*const suggestionScore = "suggestionScore";
+                    const max = 99;
 
-                    var movieData = JSON.parse(body);
-                    var randomNumbers = [];
-                    var suggestionScore = 'suggestionScore';
-                    var max = 99;
-
-                    for(let value of movieData.results){
-                        var randomNum = Math.floor(Math.random() * max);
-
-                        if(!randomNumbers.length){
-                            randomNumbers.push(randomNum);
-                        }else{
-                            var repeted = true;
-                            while(repeted == true){
-                                if(randomNumbers.indexOf(randomNum) < 0){
-                                    randomNumbers.push(randomNum);
-                                    repeted = false;
-                                }else{
-                                    randomNum = Math.floor(Math.random() * max);
-                                }
-                            }
-                            
-                        } 
-                        value[suggestionScore] = randomNum;
-
-                        movieData.results.sort(function(a, b) {
-                            return b.suggestionScore - a.suggestionScore;
-                        });
-                    }
+                    randomNumber.randomNumber(movies,suggestionScore,max); */
+                    randomNumber.randomNumber(movies,"suggestionScore",99);
                 
-                    return res.status(200).send({
-                        "message": "success",
-                        "data": movieData
-                    })
+                    messages.answer(res.status(200),"success",movies);
                 } 
             });
-        }
+        }   
+    },
+    //Get favorite movies of an user
+    getFavorites: (req,res) => {
+        const arrayMovies = [];
+        const sqlMovieUser = "SELECT * FROM favoritos WHERE user_id = ?"
         
-    },
-
-    getFavorites: function(req,res){
-        var userEmail = req.user.email;
-
-        var sql = "SELECT * FROM user WHERE email = ?"
-        db.get(sql, userEmail, (err, row) => {
+        db.all(sqlMovieUser, req.user.sub, async (err, rowFavorites) => {
             if (err) {
-                res.status(400).json({ "error": err.message });
+                messages.answer(res.status(400),err.message,null);
                 return;
-            }else{
-                var sqlMovieUser = "SELECT * FROM favoriteMovie WHERE user_id = ?"
-                var paramsMovie = [row.id]
-                db.get(sqlMovieUser, paramsMovie, function(err, row){
-                    if (err) {
-                        res.status(400).json({ "error": err.message })
-                        return;
-                    }
-
-                    return res.status(200).send({
-                        "message": "success",
-                        "data": row
-                    })
-                })
-                
-                
             }
-        });
-    },
+            if(!rowFavorites.length){
+                messages.answer(res.status(400),"El usuario no tiene peliculas favoritas",null);
+                return;
+            }
 
+            //If user has favorite movies, will search data from all movies in his list and show them
+            await Promise.all(rowFavorites.map(async element => {
+                const baseURL = "https://api.themoviedb.org/3/movie/";
+                const url = baseURL + element.movie_id + '?api_key=' + req.body.api_key;
+                
+                const response = await axios.get(url)
+                const movieData = response.data;
+                arrayMovies.push(movieData);
+            }));
+
+            //If user has favorite movies, randomNumbers is called to generate randoms numbers and added to data
+            /* const suggestionScore = "suggestionForTodayScore";
+            const max = 99; */
+
+            randomNumber.randomNumber(arrayMovies,"suggestionForTodayScore",99);
+
+            messages.answer(res.status(200),"success",arrayMovies);
+        })  
+    },
+    //Add a movie to favoritos
     addFavorites: function(req,res){
+        const movieId = req.body.id;
+        const userId = req.user.sub;
 
-        var movieId = req.body.id;
-        var userEmail = req.user.email;
+        //Search if the logued user already has the movie in the body
+        const sqlMovieUser = "SELECT * FROM favoritos WHERE user_id = ? AND movie_id = ?"
+        const paramsMovie = [userId, movieId]
+        const data = {
+            "user_id": userId,
+            "movie_id": movieId,
+        }
 
-        var sql = "SELECT * FROM user WHERE email = ?"
-        db.get(sql, userEmail, (err, row) => {
+        db.get(sqlMovieUser, paramsMovie, function(err, rowFavorite){
             if (err) {
-                res.status(400).json({ "error": err.message });
+                messages.answer(res.status(400),err.message,null);
                 return;
-            }else{
-                var sqlMovieUser = "SELECT * FROM favoriteMovie WHERE user_id = ? AND movie_id = ?"
-                var paramsMovie = [row.id, movieId]
-                db.get(sqlMovieUser, paramsMovie, function(err, rowFavorite){
-                    if (err) {
-                        res.status(400).json({ "error": err.message })
-                        return;
-                    }
-
-                    if(rowFavorite){
-                        res.status(400).send({
-                            "message": "Ya el usuario agregó esa pelicula a sus favoritos"
-                        })
-                        return;
-                    }
-
-                    var sqlMovie = "INSERT INTO favoriteMovie (user_id, movie_id) VALUES (?,?)"
-                    db.run(sqlMovie, paramsMovie, function (err, result) {
-                        if (err) {
-                            res.status(400).json({ "error": err.message })
-                            return;
-                        }
-
-                        return res.status(200).send({
-                            "message": "success",
-                            "data": paramsMovie
-                        })
-                    });
-                })
-                
-                
             }
-        });
+            //If movie is already in favoritos with the logued user get error
+            if(rowFavorite){
+                messages.answer(res.status(400),"Ya el usuario agregó esa pelicula a sus favoritos",null);
+                return;
+            }
+
+            const sqlMovie = "INSERT INTO favoritos (user_id, movie_id, addedAt) VALUES (?,?,datetime('now', 'localtime'))"
+            db.run(sqlMovie, paramsMovie, function (err, result) {
+                if (err) {
+                    messages.answer(res.status(400),err.message,null);
+                    return;
+                }
+
+                messages.answer(res.status(200),"Pelicula agregada a favoritos",data);
+            });
+        })
     }
 };
 

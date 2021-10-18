@@ -56,7 +56,7 @@ const controller = {
             //Execute query 
             db.run(sql, params, function (err, result) {
                 if (err) {
-                    messages.answer(res.status(400),err.message,null);
+                    messages.answer(res.status(400),"Usuario ya existe",null);
                     return;
                 }
                 messages.answer(res.status(200),"Usuario creado exitosamente",data);

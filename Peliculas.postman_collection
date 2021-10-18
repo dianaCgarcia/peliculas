@@ -1,0 +1,215 @@
+{
+	"info": {
+		"_postman_id": "6a0c8768-241d-46d8-a229-a601db7eb2da",
+		"name": "CodigoDelSur",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create New users",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "email",
+							"value": "admin@admin.com",
+							"type": "text"
+						},
+						{
+							"key": "firstName",
+							"value": "Diana",
+							"type": "text"
+						},
+						{
+							"key": "lastName",
+							"value": "Garcia",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/user/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"user",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "email",
+							"value": "admin@admin.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/login/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"login",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get movies",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authorization",
+						"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjEsImZpcnN0TmFtZSI6IkRpYW5hIiwibGFzdE5hbWUiOiJHYXJjaWEiLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsImRjciI6MTYzNDUyNDc0NH0.zZ8EvJIphL0jyHjlvqWl7UHv0-59wRMwtl6pD549Mcs",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "api_key",
+							"value": "32b8ab0db586d5f2ac1242b5e00be757",
+							"type": "text"
+						},
+						{
+							"key": "keyword",
+							"value": "alien",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "sort_by",
+							"value": "popularity.desc",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/movies",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"movies"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get favorites",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authorization",
+						"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjEsImZpcnN0TmFtZSI6IkRpYW5hIiwibGFzdE5hbWUiOiJHYXJjaWEiLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsImRjciI6MTYzNDUyNDc0NH0.zZ8EvJIphL0jyHjlvqWl7UHv0-59wRMwtl6pD549Mcs",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "api_key",
+							"value": "32b8ab0db586d5f2ac1242b5e00be757",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/favorites",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"favorites"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Favorites",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "authorization",
+						"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjEsImZpcnN0TmFtZSI6IkRpYW5hIiwibGFzdE5hbWUiOiJHYXJjaWEiLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsImRjciI6MTYzNDUyNDc0NH0.zZ8EvJIphL0jyHjlvqWl7UHv0-59wRMwtl6pD549Mcs",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"gettoken\": true,\r\n    \"adult\": false,\r\n    \"backdrop_path\": \"/cinER0ESG0eJ49kXlExM0MEWGxW.jpg\",\r\n    \"genre_ids\": [\r\n        28,\r\n        12,\r\n        14\r\n    ],\r\n    \"id\": 566525,\r\n    \"original_language\": \"en\",\r\n    \"original_title\": \"Shang-Chi and the Legend of the Ten Rings\",\r\n    \"overview\": \"Shang-Chi must confront the past he thought he left behind when he is drawn into the web of the mysterious Ten Rings organization.\",\r\n    \"popularity\": 1623.125,\r\n    \"poster_path\": \"/1BIoJGKbXjdFDAqUEiA2VHqkK1Z.jpg\",\r\n    \"release_date\": \"2021-09-01\",\r\n    \"title\": \"Shang-Chi and the Legend of the Ten Rings\",\r\n    \"video\": false,\r\n    \"vote_average\": 7.8,\r\n    \"vote_count\": 1243,\r\n    \"suggestionScore\": 94\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/addFavorite",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"addFavorite"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
